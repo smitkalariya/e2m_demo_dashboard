@@ -1,0 +1,19 @@
+# Root (docker compose env overrides)
+/.env
+
+# Backend (Python)
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.env
+backend/*.db
+backend/.coverage
+
+# Frontend (Next.js) — frontend/.gitignore covers node_modules/.next/etc.
+
+# Editors / OS
+.vscode/
+.DS_Store
+Thumbs.db
