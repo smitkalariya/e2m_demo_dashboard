@@ -1,4 +1,6 @@
 import { apiClient } from "@/services/axios";
+import { IS_MOCK_MODE } from "@/lib/mock/config";
+import { mockInteractionService } from "@/lib/mock/services/interaction.mock.service";
 import type {
   Interaction,
   InteractionCreatePayload,
@@ -9,7 +11,7 @@ import type {
 import type { AIInsight } from "@/features/ai-insights/types";
 import type { ApiSuccessResponse, PaginatedResponse } from "@/types/api";
 
-export const interactionService = {
+const realInteractionService = {
   async list(query: InteractionListQuery): Promise<PaginatedResponse<Interaction>> {
     const { data } = await apiClient.get<ApiSuccessResponse<PaginatedResponse<Interaction>>>("/interactions", {
       params: query,
@@ -40,3 +42,8 @@ export const interactionService = {
     return data.data;
   },
 };
+
+// Swapped wholesale based on NEXT_PUBLIC_USE_MOCK_API — every caller imports
+// `interactionService` from this module, so flipping the flag (and removing
+// this branch later) needs no changes anywhere else in the app.
+export const interactionService = IS_MOCK_MODE ? mockInteractionService : realInteractionService;
