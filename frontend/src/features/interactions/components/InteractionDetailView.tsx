@@ -10,18 +10,9 @@ import { PageSpinner } from "@/components/feedback/Spinner";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { Button } from "@/components/ui/Button";
 import { AIInsightCard } from "@/features/ai-insights/components/AIInsightCard";
+import { formatDateTime } from "@/utils/date";
 import { InteractionEditForm } from "./InteractionEditForm";
 import type { InteractionDetail } from "../types";
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function InteractionDetailView({ interactionId }: { interactionId: string }) {
   const { hasRole } = useAuth();
@@ -55,7 +46,7 @@ export function InteractionDetailView({ interactionId }: { interactionId: string
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">{interaction.title}</h1>
-          <p className="mt-1 text-sm text-slate-500">{formatDate(interaction.meeting_date)}</p>
+          <p className="mt-1 text-sm text-slate-500">{formatDateTime(interaction.meeting_date)}</p>
           <Link href={`/customers/${interaction.customer_id}`} className="mt-1 inline-block text-sm text-slate-600 hover:underline">
             View customer
           </Link>

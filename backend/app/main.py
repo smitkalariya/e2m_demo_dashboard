@@ -9,6 +9,7 @@ from app.core.config import get_settings
 from app.core.exceptions import AppError
 from app.core.logging import configure_logging, get_logger
 from app.core.responses import error_response
+from app.middleware.rate_limit import RateLimitMiddleware
 
 settings = get_settings()
 configure_logging("DEBUG" if settings.environment == "development" else "INFO")
@@ -24,6 +25,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="E2M Customer Success Platform API", lifespan=lifespan)
 
+# Order matters: middleware added later wraps the ones added earlier, so CORS
+# (added last) stays outermost and decorates even 429 responses from the rate
+# limiter with the right headers.
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

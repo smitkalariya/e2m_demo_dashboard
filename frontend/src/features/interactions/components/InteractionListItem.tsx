@@ -1,15 +1,6 @@
 import Link from "next/link";
+import { formatDateTime } from "@/utils/date";
 import type { Interaction } from "../types";
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export function InteractionListItem({ interaction }: { interaction: Interaction }) {
   return (
@@ -19,7 +10,7 @@ export function InteractionListItem({ interaction }: { interaction: Interaction 
     >
       <div>
         <p className="font-medium text-slate-900">{interaction.title}</p>
-        <p className="text-sm text-slate-500">{formatDate(interaction.meeting_date)}</p>
+        <p className="text-sm text-slate-500">{formatDateTime(interaction.meeting_date)}</p>
       </div>
     </Link>
   );

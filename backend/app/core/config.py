@@ -27,7 +27,22 @@ class Settings(BaseSettings):
     dashboard_cache_ttl_seconds: int = 300
     customer_list_cache_ttl_seconds: int = 300
 
+    rate_limit_per_minute: int = 120
+    auth_rate_limit_per_minute: int = 20
+
+
+_INSECURE_DEFAULT_JWT_SECRET = "change-me-in-production"
+
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    if (
+        settings.environment == "production"
+        and settings.jwt_secret_key == _INSECURE_DEFAULT_JWT_SECRET
+    ):
+        raise RuntimeError(
+            "JWT_SECRET_KEY must be set to a strong, unique value via environment variable "
+            "when ENVIRONMENT=production."
+        )
+    return settings

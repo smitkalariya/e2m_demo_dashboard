@@ -1,37 +1,81 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchInteractions, setFilters } from "../interactionSlice";
+import { customerService } from "@/services/customer.service";
+import { formatDateTime } from "@/utils/date";
 import { PageSpinner } from "@/components/feedback/Spinner";
 import { ErrorState } from "@/components/feedback/ErrorState";
 import { EmptyState } from "@/components/feedback/EmptyState";
 import { Button } from "@/components/ui/Button";
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { Select } from "@/components/ui/Select";
+import { Input } from "@/components/ui/Input";
+import type { Customer } from "@/features/customers/types";
 
 export function InteractionListView() {
   const dispatch = useAppDispatch();
   const { items, status, error, filters, page, totalPages } = useAppSelector((state) => state.interactions);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    customerService
+      .list({ page: 1, page_size: 100 })
+      .then((result) => setCustomers(result.items))
+      .catch(() => setCustomers([]));
+  }, []);
 
   useEffect(() => {
     dispatch(fetchInteractions(filters));
   }, [dispatch, filters]);
+
+  const customerOptions = [
+    { label: "All customers", value: "" },
+    ...customers.map((customer) => ({ label: customer.company_name, value: customer.id })),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Interactions</h1>
         <p className="text-sm text-slate-500">All logged customer meetings, most recent first.</p>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Select
+          options={customerOptions}
+          value={filters.customer_id ?? ""}
+          onChange={(event) =>
+            dispatch(setFilters({ customer_id: event.target.value || undefined, page: 1 }))
+          }
+          className="w-56"
+          aria-label="Filter by customer"
+        />
+        <Input
+          type="date"
+          value={filters.date_from ?? ""}
+          onChange={(event) => dispatch(setFilters({ date_from: event.target.value || undefined, page: 1 }))}
+          aria-label="From date"
+          className="w-44"
+        />
+        <Input
+          type="date"
+          value={filters.date_to ?? ""}
+          onChange={(event) => dispatch(setFilters({ date_to: event.target.value || undefined, page: 1 }))}
+          aria-label="To date"
+          className="w-44"
+        />
+        {(filters.customer_id || filters.date_from || filters.date_to) && (
+          <Button
+            variant="secondary"
+            onClick={() =>
+              dispatch(setFilters({ customer_id: undefined, date_from: undefined, date_to: undefined, page: 1 }))
+            }
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {status === "loading" && items.length === 0 && <PageSpinner />}
@@ -54,7 +98,7 @@ export function InteractionListView() {
             >
               <div>
                 <p className="font-medium text-slate-900">{interaction.title}</p>
-                <p className="text-sm text-slate-500">{formatDate(interaction.meeting_date)}</p>
+                <p className="text-sm text-slate-500">{formatDateTime(interaction.meeting_date)}</p>
               </div>
               <span className="text-sm text-slate-400">View customer &rarr;</span>
             </Link>
