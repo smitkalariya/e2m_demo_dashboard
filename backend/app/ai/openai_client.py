@@ -19,6 +19,7 @@ class OpenAIInsightClient:
         if self._settings.openai_api_key:
             self._client = AsyncOpenAI(
                 api_key=self._settings.openai_api_key,
+                base_url=self._settings.openai_base_url,
                 timeout=self._settings.openai_timeout_seconds,
             )
 
