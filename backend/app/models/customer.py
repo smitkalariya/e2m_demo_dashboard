@@ -22,7 +22,11 @@ class Customer(TimestampedSoftDeleteMixin, Base):
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     status: Mapped[CustomerStatus] = mapped_column(
-        Enum(CustomerStatus, name="customer_status"),
+        Enum(
+            CustomerStatus,
+            name="customer_status",
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+        ),
         default=CustomerStatus.PROSPECT,
         nullable=False,
         index=True,

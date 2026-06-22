@@ -30,13 +30,22 @@ class AIInsight(TimestampedMixin, Base):
         index=True,
     )
     status: Mapped[AIInsightStatus] = mapped_column(
-        Enum(AIInsightStatus, name="ai_insight_status"),
+        Enum(
+            AIInsightStatus,
+            name="ai_insight_status",
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+        ),
         default=AIInsightStatus.PENDING,
         nullable=False,
     )
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     sentiment: Mapped[Sentiment | None] = mapped_column(
-        Enum(Sentiment, name="ai_insight_sentiment"), nullable=True
+        Enum(
+            Sentiment,
+            name="ai_insight_sentiment",
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+        ),
+        nullable=True,
     )
     action_items: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     risks: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)

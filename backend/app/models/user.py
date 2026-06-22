@@ -19,6 +19,11 @@ class User(TimestampedSoftDeleteMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, name="user_role"), default=UserRole.USER, nullable=False, index=True
+        Enum(
+            UserRole, name="user_role", values_callable=lambda enum_cls: [e.value for e in enum_cls]
+        ),
+        default=UserRole.USER,
+        nullable=False,
+        index=True,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
