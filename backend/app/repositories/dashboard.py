@@ -27,7 +27,11 @@ class DashboardRepository:
     async def sentiment_breakdown(self) -> dict[str, int]:
         result = await self.session.execute(
             select(AIInsight.sentiment, func.count())
-            .where(AIInsight.status == AIInsightStatus.COMPLETED)
+            .join(Interaction, Interaction.id == AIInsight.interaction_id)
+            .where(
+                AIInsight.status == AIInsightStatus.COMPLETED,
+                Interaction.deleted_at.is_(None),
+            )
             .group_by(AIInsight.sentiment)
         )
         breakdown = {sentiment.value: 0 for sentiment in Sentiment}

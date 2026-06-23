@@ -10,7 +10,11 @@ from app.repositories.ai_insight import AIInsightRepository
 from app.services.ai_insight_service import AIInsightService
 from tests.conftest import TestSessionLocal
 
-MANAGER_PAYLOAD = {"name": "Mona Manager", "email": "manager4@example.com", "password": "supersecret123"}
+MANAGER_PAYLOAD = {
+    "name": "Mona Manager",
+    "email": "manager4@example.com",
+    "password": "supersecret123",
+}
 
 CUSTOMER_PAYLOAD = {
     "company_name": "Acme Corp",
@@ -131,6 +135,55 @@ async def test_dashboard_sentiment_breakdown_counts_completed_insights(client, s
     response = await client.get("/api/v1/dashboard/metrics")
     breakdown = response.json()["data"]["sentiment_breakdown"]
     assert breakdown == {"positive": 1, "neutral": 0, "negative": 0}
+
+
+async def test_dashboard_sentiment_breakdown_excludes_soft_deleted_interactions(
+    client, set_user_role
+):
+    """Regression test: deleting a customer soft-deletes its interactions but
+    leaves the AIInsight row in place (soft-delete, not a DB cascade). The
+    sentiment aggregation must join against Interaction.deleted_at so a
+    deleted interaction's insight stops being counted forever."""
+    await _manager_client(client, set_user_role)
+    customer_resp = await client.post("/api/v1/customers", json=CUSTOMER_PAYLOAD)
+    customer_id = customer_resp.json()["data"]["id"]
+    create_resp = await client.post(
+        f"/api/v1/customers/{customer_id}/interactions", json=INTERACTION_PAYLOAD
+    )
+    interaction_id = create_resp.json()["data"]["id"]
+
+    class _StubClient:
+        async def generate(self, prompt: str) -> str:
+            return (
+                '{"summary": "Strong renewal signal.", "sentiment": "positive", '
+                '"action_items": [], "risks": []}'
+            )
+
+    async with TestSessionLocal() as session:
+        interaction = (
+            await session.execute(
+                select(Interaction).where(Interaction.id == uuid.UUID(interaction_id))
+            )
+        ).scalar_one()
+        service = AIInsightService(AIInsightRepository(session), _StubClient(), CacheService())
+        await service.generate_for_interaction(interaction)
+        await session.commit()
+
+    before = await client.get("/api/v1/dashboard/metrics")
+    assert before.json()["data"]["sentiment_breakdown"] == {
+        "positive": 1,
+        "neutral": 0,
+        "negative": 0,
+    }
+
+    await client.delete(f"/api/v1/customers/{customer_id}")
+
+    after = await client.get("/api/v1/dashboard/metrics")
+    assert after.json()["data"]["sentiment_breakdown"] == {
+        "positive": 0,
+        "neutral": 0,
+        "negative": 0,
+    }
 
 
 async def test_customer_list_cache_is_stale_until_a_write_invalidates_it(
