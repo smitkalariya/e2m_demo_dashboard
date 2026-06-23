@@ -1,4 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { getCurrentPathname, hardNavigate } from "@/utils/navigation";
 
 declare module "axios" {
   export interface InternalAxiosRequestConfig {
@@ -30,6 +31,22 @@ async function refreshSession(): Promise<void> {
 
 const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/refresh"];
 
+// Refresh failed (or there was nothing to refresh) — the session is dead.
+// Clear the httpOnly cookies server-side via /auth/logout (best-effort; it
+// never 401s) and hard-navigate to /login so the user never sees a raw
+// "invalid or expired token" error, just a normal logged-out state.
+async function forceLogoutAndRedirect(): Promise<void> {
+  if (typeof window === "undefined") return;
+  try {
+    await apiClient.post("/auth/logout");
+  } catch {
+    // Cookies may already be gone — proceed to redirect regardless.
+  }
+  if (!getCurrentPathname().startsWith("/login")) {
+    hardNavigate("/login");
+  }
+}
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -42,9 +59,7 @@ apiClient.interceptors.response.use(
         await refreshSession();
         return apiClient(config);
       } catch {
-        if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-          window.location.href = "/login";
-        }
+        await forceLogoutAndRedirect();
         return Promise.reject(error);
       }
     }
