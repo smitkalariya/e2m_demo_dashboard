@@ -1,6 +1,9 @@
 # Root (docker compose env overrides)
 /.env
 
+# Vercel CLI project link (local-only)
+/.vercel
+
 # Backend (Python)
 backend/.venv/
 backend/__pycache__/
