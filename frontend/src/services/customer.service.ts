@@ -1,6 +1,4 @@
 import { apiClient } from "@/services/axios";
-import { IS_MOCK_MODE } from "@/lib/mock/config";
-import { mockCustomerService } from "@/lib/mock/services/customer.mock.service";
 import type {
   Customer,
   CustomerCreatePayload,
@@ -9,7 +7,7 @@ import type {
 } from "@/features/customers/types";
 import type { ApiSuccessResponse, PaginatedResponse } from "@/types/api";
 
-const realCustomerService = {
+export const customerService = {
   async list(query: CustomerListQuery): Promise<PaginatedResponse<Customer>> {
     const { data } = await apiClient.get<ApiSuccessResponse<PaginatedResponse<Customer>>>("/customers", {
       params: query,
@@ -36,8 +34,3 @@ const realCustomerService = {
     await apiClient.delete(`/customers/${id}`);
   },
 };
-
-// Swapped wholesale based on NEXT_PUBLIC_USE_MOCK_API — every caller imports
-// `customerService` from this module, so flipping the flag (and removing this
-// branch later) needs no changes anywhere else in the app.
-export const customerService = IS_MOCK_MODE ? mockCustomerService : realCustomerService;
