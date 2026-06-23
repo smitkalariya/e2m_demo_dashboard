@@ -62,22 +62,46 @@ describe("apiClient response interceptor", () => {
     expect(mockedHardNavigate).toHaveBeenCalledWith("/login");
   });
 
-  it("does not redirect again if already on /login", async () => {
+  it("skips both the logout call and the redirect while already on /login", async () => {
+    // Regression test: a stray /auth/logout call from this path can race
+    // with — and wipe out — the cookies a concurrent, successful login on
+    // this same page just set, bouncing the user back to /login right after
+    // a valid sign-in. Neither the logout call nor the redirect should fire
+    // here at all.
     mockedGetCurrentPathname.mockReturnValue("/login");
 
+    const calls: string[] = [];
     const adapter: MockAdapter = async (config) => {
+      calls.push(config.url ?? "");
       if (config.url === "/auth/refresh") {
         throw axiosError(401, "Refresh token missing", config);
-      }
-      if (config.url === "/auth/logout") {
-        return { data: { success: true, message: "Logged out successfully" }, status: 200, config, headers: {} };
       }
       throw axiosError(401, "Invalid or expired access token", config);
     };
     apiClient.defaults.adapter = adapter as never;
 
-    await expect(apiClient.get("/customers")).rejects.toBeDefined();
+    await expect(apiClient.get("/auth/profile")).rejects.toBeDefined();
 
+    expect(calls).toEqual(["/auth/profile", "/auth/refresh"]);
+    expect(mockedHardNavigate).not.toHaveBeenCalled();
+  });
+
+  it("skips both the logout call and the redirect while already on /register", async () => {
+    mockedGetCurrentPathname.mockReturnValue("/register");
+
+    const calls: string[] = [];
+    const adapter: MockAdapter = async (config) => {
+      calls.push(config.url ?? "");
+      if (config.url === "/auth/refresh") {
+        throw axiosError(401, "Refresh token missing", config);
+      }
+      throw axiosError(401, "Invalid or expired access token", config);
+    };
+    apiClient.defaults.adapter = adapter as never;
+
+    await expect(apiClient.get("/auth/profile")).rejects.toBeDefined();
+
+    expect(calls).toEqual(["/auth/profile", "/auth/refresh"]);
     expect(mockedHardNavigate).not.toHaveBeenCalled();
   });
 

@@ -35,16 +35,23 @@ const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/refresh"];
 // Clear the httpOnly cookies server-side via /auth/logout (best-effort; it
 // never 401s) and hard-navigate to /login so the user never sees a raw
 // "invalid or expired token" error, just a normal logged-out state.
+//
+// Skip entirely while already on /login or /register: those pages make
+// unauthenticated background requests (AuthInitializer's profile check) that
+// are *expected* to 401 for a fresh visitor, and a stray logout call here can
+// race with — and wipe out — the cookies a concurrent, successful login just
+// set, bouncing the user straight back to /login after a valid sign-in.
 async function forceLogoutAndRedirect(): Promise<void> {
   if (typeof window === "undefined") return;
+  if (getCurrentPathname().startsWith("/login") || getCurrentPathname().startsWith("/register")) {
+    return;
+  }
   try {
     await apiClient.post("/auth/logout");
   } catch {
     // Cookies may already be gone — proceed to redirect regardless.
   }
-  if (!getCurrentPathname().startsWith("/login")) {
-    hardNavigate("/login");
-  }
+  hardNavigate("/login");
 }
 
 apiClient.interceptors.response.use(

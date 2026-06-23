@@ -61,6 +61,7 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.user = action.payload;
+        state.initialized = true;
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
@@ -73,6 +74,7 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.user = action.payload;
+        state.initialized = true;
       })
       .addCase(register.rejected, (state, action) => {
         state.status = "failed";

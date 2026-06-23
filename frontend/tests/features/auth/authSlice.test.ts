@@ -48,10 +48,11 @@ describe("authSlice reducer", () => {
     expect(state.error).toBeNull();
   });
 
-  it("stores the user and marks succeeded on login.fulfilled", () => {
+  it("stores the user and marks succeeded + initialized on login.fulfilled", () => {
     const state = authReducer(initialState, { type: login.fulfilled.type, payload: user });
     expect(state.status).toBe("succeeded");
     expect(state.user).toEqual(user);
+    expect(state.initialized).toBe(true);
   });
 
   it("stores the rejection message and marks failed on login.rejected", () => {
@@ -63,10 +64,11 @@ describe("authSlice reducer", () => {
     expect(state.error).toBe("Invalid email or password");
   });
 
-  it("marks succeeded on register.fulfilled", () => {
+  it("marks succeeded + initialized on register.fulfilled", () => {
     const state = authReducer(initialState, { type: register.fulfilled.type, payload: user });
     expect(state.status).toBe("succeeded");
     expect(state.user).toEqual(user);
+    expect(state.initialized).toBe(true);
   });
 
   it("marks failed on register.rejected", () => {
